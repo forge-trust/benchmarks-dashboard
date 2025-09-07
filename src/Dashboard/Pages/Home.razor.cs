@@ -241,7 +241,7 @@ public partial class Home
                 // normalize to bytes
                 item.Result.BytesAllocated = item.Result.MemoryUnit switch
                 {
-                    // When it's bytes it's not list.
+                    // When it's bytes it's not listed.
                     null or "B" => item.Result.BytesAllocated,
                     "KB" => item.Result.BytesAllocated * 1e3,
                     "MB" => item.Result.BytesAllocated * 1e6,
