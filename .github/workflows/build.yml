@@ -37,22 +37,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          #- os-name: macos
-          #  runner: macos-latest
           - os-name: linux
             runner: ubuntu-latest
-          #- os-name: windows
-          #  runner: windows-latest
 
     steps:
-
-#    - name: Update Windows agent configuration
-#      if: runner.os == 'Windows'
-#      shell: pwsh
-#      run: |
-#        "DOTNET_INSTALL_DIR=D:\tools\dotnet" >> ${env:GITHUB_ENV}
-#        "DOTNET_ROOT=D:\tools\dotnet" >> ${env:GITHUB_ENV}
-#        "NUGET_PACKAGES=D:\.nuget\packages" >> ${env:GITHUB_ENV}
 
     - name: Checkout code
       uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -72,19 +60,6 @@ jobs:
       shell: pwsh
       run: ./build.ps1
 
-#    - name: Upload coverage to Codecov
-#      uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
-#      with:
-#        flags: ${{ matrix.os-name }}
-#        token: ${{ secrets.CODECOV_TOKEN }}
-
-#    - name: Upload test results to Codecov
-#      uses: codecov/test-results-action@47f89e9acb64b76debcd5ea40642d25a4adced9f # v1.1.1
-#      if: ${{ !cancelled() }}
-#      with:
-#        flags: ${{ matrix.os-name }}
-#        token: ${{ secrets.CODECOV_TOKEN }}
-
     - name: Publish dashboard
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       if: runner.os == 'Linux' && success()
@@ -97,7 +72,6 @@ jobs:
     needs: [ build ]
     runs-on: ubuntu-latest
     if: |
-#      github.event.repository.fork == false &&
       github.ref_name == forge-trust
 
     concurrency:
