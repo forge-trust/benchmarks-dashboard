@@ -69,12 +69,46 @@ public partial class Home
         {
             foreach (var benchmark in run.Benchmarks)
             {
-                if (!sortedGroups.TryGetValue(benchmark.Name, out var results))
-                {
-                    sortedGroups[benchmark.Name] = results = [];
-                }
+                TryAdd(benchmark.Name);
+                continue;
 
-                results.Add(run.Timestamp, new(run.Commit, benchmark));
+                void TryAdd(string key)
+                {
+                    if (!sortedGroups.TryGetValue(key, out var results))
+                    {
+                        sortedGroups[key] = results = [];
+                    }
+
+                    // We have multiple runs for the same commit, they may be different jobs.
+                    // By default the names are not unique, so lets append a suffix to make them so.
+                    // This assumes that they will be in the same order each time.
+                    if (results.ContainsKey(run.Timestamp))
+                    {
+                        // check if the key already ends with '[0-9]'
+                        var match = System.Text.RegularExpressions.Regex.Match(key, @"^(.*?)(\[(\d+)\])?$");
+                        if (match.Success)
+                        {
+                            // if it does, increment the number
+                            var baseKey = match.Groups[1].Value;
+                            var number = match.Groups[3].Success switch
+                            {
+                                true => int.Parse(match.Groups[3].Value, NumberFormatInfo.InvariantInfo) + 1,
+                                false => 1,
+                            };
+                            key = $"{baseKey}[{number}]";
+                        }
+                        else
+                        {
+                            key = $"{key}[1]";
+                        }
+
+                        TryAdd(key);
+                    }
+                    else
+                    {
+                        results.Add(run.Timestamp, new(run.Commit, benchmark));
+                    }
+                }
             }
         }
 
