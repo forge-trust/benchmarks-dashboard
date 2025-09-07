@@ -85,7 +85,7 @@ public partial class Home
                     if (results.ContainsKey(run.Timestamp))
                     {
                         // check if the key already ends with '[0-9]'
-                        var match = System.Text.RegularExpressions.Regex.Match(key, @"^(.*?)(\[(\d+)\])?$");
+                        var match = Regex.Match(key, @"^(.*?)(\[(\d+)\])?$");
                         if (match.Success)
                         {
                             // if it does, increment the number
@@ -161,16 +161,7 @@ public partial class Home
                 }
 
                 var item = new BenchmarkItem(run.Commit, benchmark);
-
-                // Ensure only a single value per timestamp per job; prefer the latest encountered
-                if (results.ContainsKey(run.Timestamp))
-                {
-                    results[run.Timestamp] = item;
-                }
-                else
-                {
-                    results.Add(run.Timestamp, item);
-                }
+                results[run.Timestamp] = item;
             }
         }
 
@@ -211,7 +202,62 @@ public partial class Home
         }
 
         const double Factor = 1e-3;
-        const double Limit = 1_000;
+        const double Limit = 700;
+
+        var hasAllocations = items.Any((p) => p.Result.BytesAllocated is not null);
+
+        // Normalize input allocations
+        foreach (var item in items)
+        {
+            // normalize to nanoseconds
+            item.Result.Value = item.Result.Unit switch
+            {
+                null or "ns" => item.Result.Value,
+                "µs" => item.Result.Value * 1e3,
+                "ms" => item.Result.Value * 1e6,
+                "s" => item.Result.Value * 1e9,
+                _ => throw new ArgumentOutOfRangeException(nameof(items), item.Result.Unit, "Unknown time unit."),
+            };
+
+            if (double.TryParse(item.Result.Range?[2..], NumberStyles.Float, CultureInfo.InvariantCulture, out var rangeDouble))
+            {
+                var prefix = item.Result.Range[0..2];
+                var updated = item.Result.Unit switch
+                {
+                    null or "ns" => rangeDouble,
+                    "µs" => rangeDouble * 1e3,
+                    "ms" => rangeDouble * 1e6,
+                    "s" => rangeDouble * 1e9,
+                    _ => throw new ArgumentOutOfRangeException(nameof(items), item.Result.Unit, "Unknown time unit."),
+                };
+
+                item.Result.Range = prefix + updated;
+            }
+
+            item.Result.Unit = "ns";
+
+            if (item.Result.BytesAllocated is not null)
+            {
+                // normalize to bytes
+                item.Result.BytesAllocated = item.Result.MemoryUnit switch
+                {
+                    // When it's bytes it's not list.
+                    null or "B" => item.Result.BytesAllocated,
+                    "KB" => item.Result.BytesAllocated * 1e3,
+                    "MB" => item.Result.BytesAllocated * 1e6,
+                    "GB" => item.Result.BytesAllocated * 1e9,
+                    "TB" => item.Result.BytesAllocated * 1e12,
+                    _ => throw new ArgumentOutOfRangeException(nameof(items), item.Result.MemoryUnit, "Unknown memory unit."),
+                };
+            }
+
+            // I'm not sure how real this will be, but there was an edge case
+            // in the tests where 1 entry was missing allocations.
+            if (hasAllocations)
+            {
+                item.Result.MemoryUnit = "B";
+            }
+        }
 
         var minimumTime = items.Min((p) => p.Result.Value);
         string[] timeUnits = ["µs", "ms", "s"];
@@ -245,7 +291,7 @@ public partial class Home
 
         if (items.Where((p) => p is not null).Min((p) => p.Result!.BytesAllocated) is { } minimumBytes)
         {
-            string[] memoryUnits = ["KB", "MB"];
+            string[] memoryUnits = ["KB", "MB", "GB", "TB"];
 
             for (int i = 0; i < memoryUnits.Length; i++)
             {
