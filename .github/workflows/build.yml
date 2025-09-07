@@ -72,7 +72,7 @@ jobs:
     needs: [ build ]
     runs-on: ubuntu-latest
     if: |
-      github.ref_name == forge-trust
+      github.ref_name == 'forge-trust'
 
     concurrency:
       group: pages
