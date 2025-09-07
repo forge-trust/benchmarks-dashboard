@@ -2,6 +2,7 @@
 // Licensed under the Apache 2.0 license. See the LICENSE file in the project root for full license information.
 
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using MartinCostello.Benchmarks.PageModels;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Playwright;
@@ -42,20 +43,17 @@ public class DashboardTests(
     public async Task Can_View_Benchmarks(string browserType, string? browserChannel)
     {
         // Arrange
+        using var http = new HttpClient();
+        var appSettingsJson = await http.GetStringAsync(
+            $"{fixture.ServerAddress.TrimEnd('/')}/appsettings.json",
+            TestContext.Current.CancellationToken);
+        using var settings = JsonDocument.Parse(appSettingsJson);
+        var root = settings.RootElement;
+
         string[] expectedRepos =
-        [
-            "benchmarks-demo",
-            "adventofcode",
-            "alexa-london-travel",
-            "alexa-london-travel-site",
-            "api",
-            "aspnetcore-openapi",
-            "costellobot",
-            "dependabot-helper",
-            "openapi-extensions",
-            "project-euler",
-            "website",
-        ];
+            root.TryGetProperty("Repositories", out var reposEl) && reposEl.ValueKind == JsonValueKind.Array
+                ? [.. reposEl.EnumerateArray().Select(x => x.GetString() ?? string.Empty).Where(x => !string.IsNullOrWhiteSpace(x))]
+                : throw new InvalidOperationException("No repositories array found in appsettings.json.");
 
         var options = new BrowserFixtureOptions
         {
