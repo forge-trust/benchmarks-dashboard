@@ -127,11 +127,11 @@ public class HomeTests : DashboardTestContext
 
         values.Count.ShouldBe(3);
         values[0].Result.Value.ShouldBe(1);
-        values[0].Result.Unit.ShouldBeNull();
+        values[0].Result.Unit.ShouldBe("ns");
         values[1].Result.Value.ShouldBe(2);
-        values[1].Result.Unit.ShouldBeNull();
+        values[1].Result.Unit.ShouldBe("ns");
         values[2].Result.Value.ShouldBe(4);
-        values[2].Result.Unit.ShouldBeNull();
+        values[2].Result.Unit.ShouldBe("ns");
 
         values = actual["B"];
 
