@@ -85,7 +85,7 @@ public partial class Home
                     if (results.ContainsKey(run.Timestamp))
                     {
                         // check if the key already ends with '[0-9]'
-                        var match = Regex.Match(key, @"^(.*?)(\[(\d+)\])?$");
+                        var match = SuffixRegex().Match(key);
                         if (match.Success)
                         {
                             // if it does, increment the number
@@ -144,7 +144,7 @@ public partial class Home
             foreach (var benchmark in run.Benchmarks)
             {
                 // Extract base benchmark name and job name from pattern "Name[Job]" if present
-                var match = Regex.Match(benchmark.Name, @"^(?<base>.*?)(?:\[(?<job>.*?)\])?$", RegexOptions.CultureInvariant);
+                var match = JobRegex().Match(benchmark.Name);
                 var baseName = match.Success ? match.Groups["base"].Value : benchmark.Name;
                 var job = match.Success && match.Groups["job"].Success ? match.Groups["job"].Value : "default";
 
@@ -371,6 +371,12 @@ public partial class Home
             await JS.InvokeVoidAsync("configureDeepLinks", []);
         }
     }
+
+    [GeneratedRegex(@"^(.*?)(\[(\d+)\])?$", RegexOptions.CultureInvariant)]
+    private static partial Regex SuffixRegex();
+
+    [GeneratedRegex(@"^(?<base>.*?)(?:\[(?<job>.*?)\])?$", RegexOptions.CultureInvariant)]
+    private static partial Regex JobRegex();
 
     private async Task RepositoryChangedAsync(ChangeEventArgs args)
     {

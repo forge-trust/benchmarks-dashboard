@@ -399,7 +399,7 @@ window.renderMultiChart = (chartId, configString) => {
       rangemode: 'tozero',
       separatethousands: true,
       title: {
-        text: isTime ? undefined : undefined, // overwritten per first series
+        text: undefined, // overwritten per first series
       },
     },
   };
@@ -488,7 +488,7 @@ window.renderMultiChart = (chartId, configString) => {
       yValues = items.map((p) => p.result.value);
       textValues = items.map((item) => {
         const { range, unit } = item.result;
-        let label = item.result.value === 'NaN' ? NaN : `${item.result.value.toFixed(rounding)}${unit}`;
+        let label = Number.isNaN(item.result.value) ? NaN : `${item.result.value.toFixed(rounding)}${unit}`;
         if (range) {
           const prefix = range.slice(0, 2);
           const rangeValue = parseFloat(range.slice(2)).toPrecision(precision);
@@ -582,7 +582,7 @@ window.renderMultiChart = (chartId, configString) => {
       ]);
     });
   } else {
-    copyButton.classList.add('disable');
+    copyButton.classList.add('disabled');
     copyButton.disabled = true;
   }
 
