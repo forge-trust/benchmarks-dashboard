@@ -172,6 +172,102 @@ public class HomeTests : DashboardTestContext
             TimeSpan.FromSeconds(2));
     }
 
+    [Fact]
+    public void NormalizeUnits_Handles_Mixed_KB_and_MB()
+    {
+        // Arrange: three items, memory in KB, MB, and null
+        var items = new List<BenchmarkItem>
+        {
+            new(new(), new BenchmarkResult { Value = 1, Unit = "ns", BytesAllocated = 300, MemoryUnit = "KB" }),
+            new(new(), new BenchmarkResult { Value = 1, Unit = "ns", BytesAllocated = 1, MemoryUnit = "MB" }),
+            new(new(), new BenchmarkResult { Value = 1, Unit = "ns", BytesAllocated = null, MemoryUnit = null }),
+        };
+
+        // Act
+        Home.NormalizeUnits(items);
+
+        // Assert: everything scales to KB because min is 300 KB
+        items[0].Result.BytesAllocated.ShouldBe(300);
+        items[0].Result.MemoryUnit.ShouldBe("KB");
+
+        items[1].Result.BytesAllocated.ShouldBe(1_000);
+        items[1].Result.MemoryUnit.ShouldBe("KB");
+
+        // Null remains null, but MemoryUnit is set to B during normalization
+        items[2].Result.BytesAllocated.ShouldBeNull();
+        items[2].Result.MemoryUnit.ShouldBe("B");
+
+        // Time stays as ns as inputs were tiny
+        items.ForEach(i => i.Result.Unit.ShouldBe("ns"));
+    }
+
+    [Fact]
+    public void NormalizeUnits_Converts_Range_With_Time_Units()
+    {
+        // Arrange: values in ms with a range; should normalize to ns and back to ms
+        var items = new List<BenchmarkItem>
+        {
+            new(new(), new BenchmarkResult { Value = 1.5, Unit = "ms", Range = "± 0.1" }),
+            new(new(), new BenchmarkResult { Value = 0.8, Unit = "ms" }),
+        };
+
+        // Act
+        Home.NormalizeUnits(items);
+
+        // Assert: final unit is ms (min 0.8ms -> stays in ms) and range preserved numerically
+        items[0].Result.Unit.ShouldBe("ms");
+        items[1].Result.Unit.ShouldBe("ms");
+
+        items[0].Result.Value.ShouldBe(1.5);
+        items[1].Result.Value.ShouldBe(0.8);
+
+        items[0].Result.Range.ShouldBe("± 0.1");
+    }
+
+    [Fact]
+    public void GroupBenchmarksByJob_Groups_And_Normalizes()
+    {
+        // Arrange
+        var runs = new List<BenchmarkRun>
+        {
+            new()
+            {
+                Timestamp = new DateTimeOffset(2024, 09, 01, 00, 00, 00, TimeSpan.Zero),
+                Commit = CreateCommit("a1"),
+                Benchmarks =
+                [
+                    new() { Name = "X[JobA]", Value = 1_200 }, // ns
+                    new() { Name = "X[JobB]", Value = 2_300 },
+                ],
+            },
+            new()
+            {
+                Timestamp = new DateTimeOffset(2024, 09, 02, 00, 00, 00, TimeSpan.Zero),
+                Commit = CreateCommit("b2"),
+                Benchmarks =
+                [
+                    new() { Name = "X[JobA]", Value = 1_800 },
+                    new() { Name = "X[JobB]", Value = 2_000 },
+                ],
+            },
+        };
+
+        // Act
+        var grouped = Home.GroupBenchmarksByJob(runs);
+
+        // Assert
+        grouped.ShouldContainKey("X");
+        var jobs = grouped["X"];
+        jobs.ShouldContainKey("JobA");
+        jobs.ShouldContainKey("JobB");
+
+        jobs["JobA"].Count.ShouldBe(2);
+        jobs["JobB"].Count.ShouldBe(2);
+
+        // Units for time should be consistent across jobs after normalization
+        jobs["JobA"].Select(i => i.Result.Unit).Distinct().Single().ShouldBe(jobs["JobB"].Select(i => i.Result.Unit).Distinct().Single());
+    }
+
     private static GitCommit CreateCommit(string sha)
     {
         return new GitCommit()
