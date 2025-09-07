@@ -1,6 +1,6 @@
 ﻿// Copyright (c) Martin Costello, 2024. All rights reserved.
 // Licensed under the Apache 2.0 license. See the LICENSE file in the project root for full license information.
-
+using System.Text.RegularExpressions;
 using MartinCostello.Benchmarks.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
@@ -124,6 +124,79 @@ public partial class Home
         }
 
         return grouped;
+    }
+
+    /// <summary>
+    /// Groups the specified benchmark runs by the logical benchmark (without job) and then by job name.
+    /// Produces chronology-sorted items for each job to render multi-series charts.
+    /// </summary>
+    /// <param name="runs">The benchmark runs to group.</param>
+    /// <returns>
+    /// A dictionary keyed by base benchmark name mapping to dictionaries of job name to items.
+    /// </returns>
+    public static Dictionary<string, Dictionary<string, IList<BenchmarkItem>>> GroupBenchmarksByJob(IList<BenchmarkRun> runs)
+    {
+        // baseName -> job -> results sorted by timestamp
+        Dictionary<string, Dictionary<string, SortedList<DateTimeOffset, BenchmarkItem>>> grouped = new(StringComparer.Ordinal);
+
+        foreach (var run in runs.DistinctBy((p) => p.Commit.Sha))
+        {
+            foreach (var benchmark in run.Benchmarks)
+            {
+                // Extract base benchmark name and job name from pattern "Name[Job]" if present
+                var match = Regex.Match(benchmark.Name, @"^(?<base>.*?)(?:\[(?<job>.*?)\])?$", RegexOptions.CultureInvariant);
+                var baseName = match.Success ? match.Groups["base"].Value : benchmark.Name;
+                var job = match.Success && match.Groups["job"].Success ? match.Groups["job"].Value : "default";
+
+                if (!grouped.TryGetValue(baseName, out var jobs))
+                {
+                    jobs = new(StringComparer.Ordinal);
+                    grouped[baseName] = jobs;
+                }
+
+                if (!jobs.TryGetValue(job, out var results))
+                {
+                    results = [];
+                    jobs[job] = results;
+                }
+
+                var item = new BenchmarkItem(run.Commit, benchmark);
+
+                // Ensure only a single value per timestamp per job; prefer the latest encountered
+                if (results.ContainsKey(run.Timestamp))
+                {
+                    results[run.Timestamp] = item;
+                }
+                else
+                {
+                    results.Add(run.Timestamp, item);
+                }
+            }
+        }
+
+        // Normalize units across all series within each base benchmark
+        var output = new Dictionary<string, Dictionary<string, IList<BenchmarkItem>>>(StringComparer.Ordinal);
+
+        foreach (var (baseName, jobs) in grouped)
+        {
+            var jobLists = new Dictionary<string, IList<BenchmarkItem>>(StringComparer.Ordinal);
+
+            // Flatten for normalization
+            List<BenchmarkItem> allItems = [];
+            foreach (var (job, sorted) in jobs)
+            {
+                var items = sorted.Select((p) => p.Value).ToList();
+                jobLists[job] = items;
+                allItems.AddRange(items);
+            }
+
+            // Normalize time and memory units across all items for consistent axes
+            NormalizeUnits(allItems);
+
+            output[baseName] = jobLists;
+        }
+
+        return output;
     }
 
     /// <summary>

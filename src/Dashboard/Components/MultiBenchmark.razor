@@ -1,0 +1,24 @@
+@* Container for multi-series benchmark chart *@
+<div class="benchmark-chart-container col" id="@(Id)">
+    <div class="benchmark-chart" id="@(ChartId)" name="@(TitleName)" />
+    <div class="btn-toolbar float-end" role="toolbar" aria-label="Chart options">
+        <div class="btn-group me-2" role="group" aria-label="Copy">
+            <button class="btn btn-dark btn-small copy-chart"
+                    id="@(ChartId)-copy"
+                    title="Copy this chart to the clipboard as a @(Options.Value.ImageFormat)"
+                    type="button">
+                <Icon Name="@(Icons.ChartLine)" FixedWidth="true" />
+                <Icon Name="@(Icons.Clipboard)" FixedWidth="true" />
+            </button>
+        </div>
+        <div class="btn-group" role="group" aria-label="Download chart">
+            <button class="btn btn-dark btn-small download-chart"
+                    id="@(ChartId)-download"
+                    title="Download this chart as a @(Options.Value.ImageFormat) file"
+                    type="button">
+                <Icon Name="@(Icons.ChartLine)" FixedWidth="true" />
+                <Icon Name="@(Icons.FileArrowDown)" FixedWidth="true" />
+            </button>
+        </div>
+    </div>
+</div>

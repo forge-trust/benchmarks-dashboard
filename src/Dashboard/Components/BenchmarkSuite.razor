@@ -12,4 +12,17 @@
             <Benchmark Items="@(items)" Name="@(benchmark)" Suite="@(Name)" />
         }
     </div>
+
+    @if (MultiBenchmarks?.Count > 0)
+    {
+        <hr />
+        <h3 class="h5 ms-2">All jobs comparison</h3>
+        <div class="benchmark-graphs row row-cols-1 row-cols-sm-2">
+            @foreach ((var baseName, var series) in MultiBenchmarks!)
+            {
+                <MultiBenchmark BaseName="@(baseName)" Suite="@(Name)" Series="@(series)" Kind="time" />
+                <MultiBenchmark BaseName="@(baseName)" Suite="@(Name)" Series="@(series)" Kind="memory" />
+            }
+        </div>
+    }
 </div>
