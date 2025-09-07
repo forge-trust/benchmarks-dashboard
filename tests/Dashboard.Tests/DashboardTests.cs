@@ -47,7 +47,7 @@ public class DashboardTests(
 
         var appSettingsJson = await File.ReadAllTextAsync(appSettingsFile, cancellationToken: TestContext.Current.CancellationToken);
         using var settings = JsonDocument.Parse(appSettingsJson);
-        var root = settings.RootElement;
+        var root = settings.RootElement.GetProperty("Dashboard");
 
         string[] expectedRepos =
             root.TryGetProperty("Repositories", out var reposEl) && reposEl.ValueKind == JsonValueKind.Array
