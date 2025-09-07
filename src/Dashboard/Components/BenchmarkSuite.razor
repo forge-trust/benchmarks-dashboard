@@ -6,22 +6,47 @@
             <Icon Name="@(Icons.Clipboard)" Classes="@(["align-middle", "fade", "fs-6"])" />
         </a>
     </h2>
-    <div class="benchmark-graphs row row-cols-1 row-cols-sm-2">
-        @foreach ((var benchmark, var items) in Benchmarks)
-        {
-            <Benchmark Items="@(items)" Name="@(benchmark)" Suite="@(Name)" />
-        }
-    </div>
 
-    @if (MultiBenchmarks?.Count > 0)
+    @if (MultiBenchmarks is { Count: > 0 } multi && multi.Any(p => p.Value.Count > 1))
     {
-        <hr />
-        <h3 class="h5 ms-2">All jobs comparison</h3>
+        <ul class="nav nav-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#@(Name)-benchmarks" type="button" role="tab" aria-controls="@(Name)-benchmarks" aria-selected="true">
+                    Benchmarks
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#@(Name)-comparisons" type="button" role="tab" aria-controls="@(Name)-comparisons" aria-selected="false">
+                    Comparisons
+                </button>
+            </li>
+        </ul>
+        <div class="tab-content mt-3">
+            <div class="tab-pane fade show active" id="@(Name)-benchmarks" role="tabpanel" tabindex="0">
+                <div class="benchmark-graphs row row-cols-1 row-cols-sm-2">
+                    @foreach ((var benchmark, var items) in Benchmarks)
+                    {
+                        <Benchmark Items="@(items)" Name="@(benchmark)" Suite="@(Name)" />
+                    }
+                </div>
+            </div>
+            <div class="tab-pane fade" id="@(Name)-comparisons" role="tabpanel" tabindex="0">
+                <div class="benchmark-graphs row row-cols-1 row-cols-sm-2">
+                    @foreach ((var baseName, var series) in MultiBenchmarks!.Where(p => p.Value.Count > 1))
+                    {
+                        <MultiBenchmark BaseName="@(baseName)" Suite="@(Name)" Series="@(series)" Kind="time" />
+                        <MultiBenchmark BaseName="@(baseName)" Suite="@(Name)" Series="@(series)" Kind="memory" />
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
         <div class="benchmark-graphs row row-cols-1 row-cols-sm-2">
-            @foreach ((var baseName, var series) in MultiBenchmarks!)
+            @foreach ((var benchmark, var items) in Benchmarks)
             {
-                <MultiBenchmark BaseName="@(baseName)" Suite="@(Name)" Series="@(series)" Kind="time" />
-                <MultiBenchmark BaseName="@(baseName)" Suite="@(Name)" Series="@(series)" Kind="memory" />
+                <Benchmark Items="@(items)" Name="@(benchmark)" Suite="@(Name)" />
             }
         </div>
     }
