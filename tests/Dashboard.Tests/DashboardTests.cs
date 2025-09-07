@@ -43,10 +43,9 @@ public class DashboardTests(
     public async Task Can_View_Benchmarks(string browserType, string? browserChannel)
     {
         // Arrange
-        using var http = new HttpClient();
-        var appSettingsJson = await http.GetStringAsync(
-            $"{fixture.ServerAddress.TrimEnd('/')}/appsettings.json",
-            TestContext.Current.CancellationToken);
+        var appSettingsFile = Path.Combine(DashboardFixture.GetApplicationDirectory(), "wwwroot", "appsettings.json");
+
+        var appSettingsJson = await File.ReadAllTextAsync(appSettingsFile, cancellationToken: TestContext.Current.CancellationToken);
         using var settings = JsonDocument.Parse(appSettingsJson);
         var root = settings.RootElement;
 
