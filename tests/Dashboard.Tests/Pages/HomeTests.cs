@@ -268,6 +268,106 @@ public class HomeTests : DashboardTestContext
         jobs["JobA"].Select(i => i.Result.Unit).Distinct().Single().ShouldBe(jobs["JobB"].Select(i => i.Result.Unit).Distinct().Single());
     }
 
+    [Fact]
+    public void GroupBenchmarks_Appends_Suffix_For_Duplicate_Timestamps()
+    {
+        // Arrange: single run with three benchmarks with same name and timestamp
+        var ts = new DateTimeOffset(2024, 09, 03, 12, 00, 00, TimeSpan.Zero);
+        var run = new BenchmarkRun
+        {
+            Timestamp = ts,
+            Commit = CreateCommit("dup"),
+            Benchmarks =
+            [
+                new() { Name = "Dup", Value = 10 },
+                new() { Name = "Dup", Value = 20 },
+                new() { Name = "Dup", Value = 30 },
+            ],
+        };
+
+        // Act
+        var grouped = Home.GroupBenchmarks([run]);
+
+        // Assert: expect keys Dup, Dup[1], Dup[2]
+        grouped.Keys.ShouldBe(["Dup", "Dup[1]", "Dup[2]"]);
+        grouped["Dup"].Single().Result.Value.ShouldBe(10);
+        grouped["Dup[1]"].Single().Result.Value.ShouldBe(20);
+        grouped["Dup[2]"].Single().Result.Value.ShouldBe(30);
+    }
+
+    [Fact]
+    public void NormalizeUnits_Scales_From_Ns_To_Us_And_Updates_Range()
+    {
+        // Arrange
+        var items = new List<BenchmarkItem>
+        {
+            new(new(), new BenchmarkResult { Value = 800, Unit = "ns", Range = "± 0.1" }),
+            new(new(), new BenchmarkResult { Value = 900, Unit = "ns", Range = "± 0.2" }),
+        };
+
+        // Act
+        Home.NormalizeUnits(items);
+
+        // Assert
+        items[0].Result.Unit.ShouldBe("µs");
+        items[1].Result.Unit.ShouldBe("µs");
+        items[0].Result.Value.ShouldBe(0.8);
+        items[1].Result.Value.ShouldBe(0.9);
+        items[0].Result.Range.ShouldBe("± 0.0001");
+        items[1].Result.Range.ShouldBe("± 0.0002");
+    }
+
+    [Fact]
+    public void NormalizeUnits_Scales_Large_Memory_Units_To_GB()
+    {
+        // Arrange: 1 GB and 1 TB; expect final unit GB (min == 1 GB)
+        var items = new List<BenchmarkItem>
+        {
+            new(new(), new BenchmarkResult { Value = 1, Unit = "ns", BytesAllocated = 1, MemoryUnit = "GB" }),
+            new(new(), new BenchmarkResult { Value = 1, Unit = "ns", BytesAllocated = 1, MemoryUnit = "TB" }),
+        };
+
+        // Act
+        Home.NormalizeUnits(items);
+
+        // Assert
+        items[0].Result.MemoryUnit.ShouldBe("GB");
+        items[1].Result.MemoryUnit.ShouldBe("GB");
+        items[0].Result.BytesAllocated.ShouldBe(1);
+        items[1].Result.BytesAllocated.ShouldBe(1_000);
+    }
+
+    [Fact]
+    public void GroupBenchmarksByJob_Replaces_On_Timestamp_Collision()
+    {
+        // Arrange: two runs at same timestamp for JobA; later run should win
+        var ts = new DateTimeOffset(2024, 09, 05, 10, 00, 00, TimeSpan.Zero);
+        var runs = new List<BenchmarkRun>
+        {
+            new()
+            {
+                Timestamp = ts,
+                Commit = CreateCommit("c1"),
+                Benchmarks = [new() { Name = "Y[JobA]", Value = 100 }],
+            },
+            new()
+            {
+                Timestamp = ts,
+                Commit = CreateCommit("c2"),
+                Benchmarks = [new() { Name = "Y[JobA]", Value = 200 }],
+            },
+        };
+
+        // Act
+        var grouped = Home.GroupBenchmarksByJob(runs);
+
+        // Assert
+        grouped.ShouldContainKey("Y");
+        grouped["Y"].ShouldContainKey("JobA");
+        grouped["Y"]["JobA"].Count.ShouldBe(1);
+        grouped["Y"]["JobA"].Single().Result.Value.ShouldBe(200);
+    }
+
     private static GitCommit CreateCommit(string sha)
     {
         return new GitCommit()
