@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Martin Costello, 2024. All rights reserved.
 // Licensed under the Apache 2.0 license. See the LICENSE file in the project root for full license information.
 
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -35,6 +36,9 @@ internal static class AppLauncher
             UseShellExecute = false,
             WorkingDirectory = path,
         };
+
+        startInfo.EnvironmentVariables["ASPNETCORE_ENVIRONMENT"] = "Test";
+        startInfo.EnvironmentVariables["DOTNET_ENVIRONMENT"] = "Test";
 
         var completionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var tokenSource = new CancellationTokenSource(timeout);
