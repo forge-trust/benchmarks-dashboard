@@ -29,7 +29,7 @@ internal static class AppLauncher
         int port = GetFreePort();
         var serverAddress = FormattableString.Invariant($"https://localhost:{port}");
 
-        var startInfo = new ProcessStartInfo("dotnet", ["run", "--configuration", configuration, "--", "--urls", serverAddress])
+        var startInfo = new ProcessStartInfo("dotnet", ["run", "--configuration", configuration, "--", "--environment", "Test", "--urls", serverAddress])
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
