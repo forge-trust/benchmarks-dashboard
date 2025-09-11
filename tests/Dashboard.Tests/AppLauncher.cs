@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
+using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
 
 namespace MartinCostello.Benchmarks;
 
@@ -37,8 +38,7 @@ internal static class AppLauncher
             WorkingDirectory = path,
         };
 
-        startInfo.EnvironmentVariables["ASPNETCORE_ENVIRONMENT"] = "Test";
-        startInfo.EnvironmentVariables["DOTNET_ENVIRONMENT"] = "Test";
+        startInfo.AddEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Test");
 
         var completionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var tokenSource = new CancellationTokenSource(timeout);
