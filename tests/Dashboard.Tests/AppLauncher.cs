@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Martin Costello, 2024. All rights reserved.
 // Licensed under the Apache 2.0 license. See the LICENSE file in the project root for full license information.
 
-using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -28,7 +27,7 @@ internal static class AppLauncher
         // See https://learn.microsoft.com/aspnet/core/fundamentals/servers/kestrel/endpoints#configure-endpoints
         int port = GetFreePort();
         var bindingAddress = FormattableString.Invariant($"https://localhost:{port}");
-        var browseAddress = bindingAddress + "?env=Test";
+        var browseAddress = bindingAddress; // + "?env=Test";
 
         var startInfo = new ProcessStartInfo("dotnet", ["run", "--configuration", configuration, "--", "--environment", "Test", "--urls", bindingAddress])
         {

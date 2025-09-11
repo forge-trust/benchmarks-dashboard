@@ -43,16 +43,19 @@ public class DashboardTests(
     public async Task Can_View_Benchmarks(string browserType, string? browserChannel)
     {
         // Arrange
-        var appSettingsFile = Path.Combine(DashboardFixture.GetApplicationDirectory(), "wwwroot", "appsettings.json");
-
-        var appSettingsJson = await File.ReadAllTextAsync(appSettingsFile, cancellationToken: TestContext.Current.CancellationToken);
-        using var settings = JsonDocument.Parse(appSettingsJson);
-        var root = settings.RootElement.GetProperty("Dashboard");
-
-        string[] expectedRepos =
-            root.TryGetProperty("Repositories", out var reposEl) && reposEl.ValueKind == JsonValueKind.Array
-                ? [.. reposEl.EnumerateArray().Select(x => x.GetString() ?? string.Empty).Where(x => !string.IsNullOrWhiteSpace(x))]
-                : throw new InvalidOperationException("No repositories array found in appsettings.json.");
+        string[] expectedRepos = [
+            "benchmarks-demo",
+            "adventofcode",
+            "alexa-london-travel",
+            "alexa-london-travel-site",
+            "api",
+            "aspnetcore-openapi",
+            "costellobot",
+            "dependabot-helper",
+            "openapi-extensions",
+            "project-euler",
+            "website",
+        ];
 
         var options = new BrowserFixtureOptions
         {
@@ -75,21 +78,47 @@ public class DashboardTests(
 
             // Act and Assert
             await dashboard.WaitForContentAsync();
-            await dashboard.Repository().ShouldBe(expectedRepos[0]);
+            await dashboard.Repository().ShouldBe("benchmarks-demo");
             await dashboard.Branch().ShouldBe("main");
 
             await dashboard.Repositories().ShouldBe(expectedRepos);
 
-            // await dashboard.Branches().ShouldBe(["main", "dotnet-nightly", "dotnet-vnext"]);
             var benchmarks = await dashboard.Benchmarks();
 
-            benchmarks.Count.ShouldBeGreaterThan(0);
+            benchmarks.ShouldContainKey("DotNetBenchmarks.IndexOfAnyBenchmarks");
+            benchmarks["DotNetBenchmarks.IndexOfAnyBenchmarks"].ShouldBe(
+            [
+                "DotNetBenchmarks.IndexOfAnyBenchmarks.IndexOfAny_String",
+                "DotNetBenchmarks.IndexOfAnyBenchmarks.IndexOfAny_Span_Array",
+                "DotNetBenchmarks.IndexOfAnyBenchmarks.IndexOfAny_Span_Two_Chars",
+            ]);
 
-            // var chart = await dashboard.GetChart(
-            //     expectedRepos[0],
-            //     benchmarks[expectedRepos[0]][0]);
+            benchmarks.ShouldContainKey("DotNetBenchmarks.HashBenchmarks");
+            benchmarks["DotNetBenchmarks.HashBenchmarks"].ShouldBe(
+            [
+                "DotNetBenchmarks.HashBenchmarks.Sha256ComputeHash",
+                "DotNetBenchmarks.HashBenchmarks.Sha256HashData",
+            ]);
 
-            // await VerifyScreenshot(chart, $"{browserType}_{browserChannel}_benchmarks-demo");
+            benchmarks.ShouldContainKey("DotNetBenchmarks.ILoggerFactoryBenchmarks");
+            benchmarks["DotNetBenchmarks.ILoggerFactoryBenchmarks"].ShouldBe(
+            [
+                "DotNetBenchmarks.ILoggerFactoryBenchmarks.CreateLogger_Generic",
+                "DotNetBenchmarks.ILoggerFactoryBenchmarks.CreateLogger_Type",
+            ]);
+
+            benchmarks.ShouldContainKey("DotNetBenchmarks.TodoAppBenchmarks");
+            benchmarks["DotNetBenchmarks.TodoAppBenchmarks"].ShouldBe(
+            [
+                "DotNetBenchmarks.TodoAppBenchmarks.GetAllTodos",
+                "DotNetBenchmarks.TodoAppBenchmarks.GetOneTodo",
+            ]);
+
+            var chart = await dashboard.GetChart(
+                "DotNetBenchmarks.TodoAppBenchmarks",
+                "DotNetBenchmarks.TodoAppBenchmarks.GetAllTodos");
+
+            await VerifyScreenshot(chart, $"{browserType}_{browserChannel}_benchmarks-demo");
 
             // Arrange
             var token = await dashboard.SignInAsync();
@@ -126,10 +155,63 @@ public class DashboardTests(
             // Assert
             await dashboard.WaitForSignedInAsync();
             await dashboard.UserNameAsync().ShouldBe("speedy");
-            await dashboard.Repository().ShouldBe(expectedRepos[0]);
+            await dashboard.Repository().ShouldBe("benchmarks-demo");
             await dashboard.Branch().ShouldBe("main");
 
             await dashboard.Repositories().ShouldBe(expectedRepos);
+
+            await dashboard.Branches().ShouldBe(["main", "dotnet-nightly", "dotnet-vnext"]);
+
+            // Act
+            await dashboard.WithRepository("website");
+
+            // Assert
+            await dashboard.WaitForContentAsync();
+            await dashboard.Repository().ShouldBe("website");
+            await dashboard.Branch().ShouldBe("main");
+            await dashboard.Repositories().ShouldBe(expectedRepos);
+            await dashboard.Branches().ShouldBe(["main", "dev"]);
+
+            benchmarks = await dashboard.Benchmarks();
+
+            benchmarks.ShouldContainKey("Website");
+            benchmarks["Website"].ShouldBe(
+            [
+                "MartinCostello.Website.Benchmarks.WebsiteBenchmarks.Root",
+                "MartinCostello.Website.Benchmarks.WebsiteBenchmarks.About",
+                "MartinCostello.Website.Benchmarks.WebsiteBenchmarks.Projects",
+                "MartinCostello.Website.Benchmarks.WebsiteBenchmarks.Tools",
+                "MartinCostello.Website.Benchmarks.WebsiteBenchmarks.Version",
+            ]);
+
+            // Act
+            await dashboard.WithBranch("dev");
+
+            // Assert
+            await dashboard.WaitForContentAsync();
+            await dashboard.Repository().ShouldBe("website");
+            await dashboard.Branch().ShouldBe("dev");
+            await dashboard.Repositories().ShouldBe(expectedRepos);
+            await dashboard.Branches().ShouldBe(["main", "dev"]);
+
+            benchmarks = await dashboard.Benchmarks();
+
+            benchmarks.ShouldContainKey("Website");
+            benchmarks["Website"].ShouldBe(
+            [
+                "MartinCostello.Website.Benchmarks.WebsiteBenchmarks.Root",
+                "MartinCostello.Website.Benchmarks.WebsiteBenchmarks.About",
+                "MartinCostello.Website.Benchmarks.WebsiteBenchmarks.Projects",
+                "MartinCostello.Website.Benchmarks.WebsiteBenchmarks.Tools",
+            ]);
+
+            chart = await dashboard.GetChart(
+                "Website",
+                "MartinCostello.Website.Benchmarks.WebsiteBenchmarks.Tools");
+
+            chart.ShouldNotBeNull();
+
+            await VerifyScreenshot(chart, $"{browserType}_{browserChannel}_website");
 
             // Act
             await dashboard.SignOutAsync();
@@ -141,6 +223,20 @@ public class DashboardTests(
 
     private static string JsonResponseFile(string name)
         => Path.Combine(".", "Responses", $"{name}.json");
+
+    private static async Task VerifyScreenshot(IElementHandle element, string parametersText)
+    {
+        var screenshot = await element.ScreenshotAsync(new()
+        {
+            Quality = 50,
+            Type = ScreenshotType.Jpeg,
+        });
+
+        using var stream = new MemoryStream(screenshot);
+        await Verify(new Target("png", stream))
+            .UseDirectory("snapshots")
+            .UseTextForParameters(parametersText);
+    }
 
     private static async Task ConfigureMocksAsync(
         IPage page,
