@@ -100,15 +100,14 @@ $publishProjects = @(
     (Join-Path $solutionPath "src" "Dashboard" "Dashboard.csproj")
 )
 
-# Run primary tests before publishing.
-if (-Not $SkipTests) {
-    Write-Information "Testing solution..."
-    DotNetTest
-}
-
 Write-Information "Publishing solution..."
 ForEach ($project in $publishProjects) {
     DotNetPublish $project $Configuration
 }
 
-
+if (-Not $SkipTests) {
+    Write-Information "Testing solution..."
+    # set ASPNETCORE_ENVIRONMENT to 'Test' for the test run
+    $env:ASPNETCORE_ENVIRONMENT = "Test"
+    DotNetTest
+}
