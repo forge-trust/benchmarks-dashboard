@@ -76,7 +76,16 @@
       top.location = self.location;
     }
   </script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/5.3.7/flatly/bootstrap.min.css" integrity="sha512-O+EA0Agf5+pB8u7CtnIAYq/BKyFPMT8c0DFjmqLyfIJJ9Fm8GBohV/0H0TFaZ96+jieN8zUVY4IkSBso9z6hpg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link id="theme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/5.3.7/flatly/bootstrap.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <script type="text/javascript">
+    (function () {
+      const theme = localStorage.getItem('theme') || 'light';
+      if (theme === 'dark') {
+        document.getElementById('theme').href = 'https://cdnjs.cloudflare.com/ajax/libs/bootswatch/5.3.7/darkly/bootstrap.min.css';
+      }
+      document.documentElement.setAttribute('data-bs-theme', theme);
+    })();
+  </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <script type="text/javascript">
     if (window.location.pathname.length > 1) {

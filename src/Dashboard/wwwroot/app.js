@@ -1,4 +1,35 @@
+
 'use strict';
+
+const themeUrls = {
+  light: 'https://cdnjs.cloudflare.com/ajax/libs/bootswatch/5.3.7/flatly/bootstrap.min.css',
+  dark: 'https://cdnjs.cloudflare.com/ajax/libs/bootswatch/5.3.7/darkly/bootstrap.min.css',
+};
+
+window.setTheme = (theme) => {
+  const link = document.getElementById('theme');
+  if (link) {
+    link.href = themeUrls[theme];
+  }
+  document.documentElement.setAttribute('data-bs-theme', theme);
+  localStorage.setItem('theme', theme);
+
+  const icon = document.querySelector('#toggle-theme span');
+  if (icon) {
+    icon.classList.remove(theme === 'dark' ? 'fa-moon' : 'fa-sun');
+    icon.classList.add(theme === 'dark' ? 'fa-sun' : 'fa-moon');
+  }
+};
+
+window.setThemeFromStorage = () => {
+  const theme = localStorage.getItem('theme') || 'light';
+  window.setTheme(theme);
+};
+
+window.toggleTheme = () => {
+  const theme = localStorage.getItem('theme') === 'dark' ? 'light' : 'dark';
+  window.setTheme(theme);
+};
 
 window.scrollToActiveChart = () => {
   if (window.location.hash) {
