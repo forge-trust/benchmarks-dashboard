@@ -20,6 +20,13 @@ public partial class BenchmarkSuite
     [Parameter]
     public required Dictionary<string, IList<BenchmarkItem>> Benchmarks { get; init; }
 
+    /// <summary>
+    /// Gets the multi-series benchmarks grouped by base name and job.
+    /// Key: base benchmark name; Value: job name -> items.
+    /// </summary>
+    [Parameter]
+    public Dictionary<string, Dictionary<string, IList<BenchmarkItem>>>? MultiBenchmarks { get; init; }
+
     /// <inheritdoc/>
     protected override bool ShouldRender() => true;
 }

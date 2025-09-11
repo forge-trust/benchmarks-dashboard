@@ -1,6 +1,6 @@
 ﻿// Copyright (c) Martin Costello, 2024. All rights reserved.
 // Licensed under the Apache 2.0 license. See the LICENSE file in the project root for full license information.
-
+using System.Text.RegularExpressions;
 using MartinCostello.Benchmarks.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
@@ -85,7 +85,7 @@ public partial class Home
                     if (results.ContainsKey(run.Timestamp))
                     {
                         // check if the key already ends with '[0-9]'
-                        var match = System.Text.RegularExpressions.Regex.Match(key, @"^(.*?)(\[(\d+)\])?$");
+                        var match = SuffixRegex().Match(key);
                         if (match.Success)
                         {
                             // if it does, increment the number
@@ -127,6 +127,70 @@ public partial class Home
     }
 
     /// <summary>
+    /// Groups the specified benchmark runs by the logical benchmark (without job) and then by job name.
+    /// Produces chronology-sorted items for each job to render multi-series charts.
+    /// </summary>
+    /// <param name="runs">The benchmark runs to group.</param>
+    /// <returns>
+    /// A dictionary keyed by base benchmark name mapping to dictionaries of job name to items.
+    /// </returns>
+    public static Dictionary<string, Dictionary<string, IList<BenchmarkItem>>> GroupBenchmarksByJob(IList<BenchmarkRun> runs)
+    {
+        // baseName -> job -> results sorted by timestamp
+        Dictionary<string, Dictionary<string, SortedList<DateTimeOffset, BenchmarkItem>>> grouped = new(StringComparer.Ordinal);
+
+        foreach (var run in runs.DistinctBy((p) => p.Commit.Sha))
+        {
+            foreach (var benchmark in run.Benchmarks)
+            {
+                // Extract base benchmark name and job name from pattern "Name[Job]" if present
+                var match = JobRegex().Match(benchmark.Name);
+                var baseName = match.Success ? match.Groups["base"].Value : benchmark.Name;
+                var job = match.Success && match.Groups["job"].Success ? match.Groups["job"].Value : "default";
+
+                if (!grouped.TryGetValue(baseName, out var jobs))
+                {
+                    jobs = new(StringComparer.Ordinal);
+                    grouped[baseName] = jobs;
+                }
+
+                if (!jobs.TryGetValue(job, out var results))
+                {
+                    results = [];
+                    jobs[job] = results;
+                }
+
+                var item = new BenchmarkItem(run.Commit, benchmark);
+                results[run.Timestamp] = item;
+            }
+        }
+
+        // Normalize units across all series within each base benchmark
+        var output = new Dictionary<string, Dictionary<string, IList<BenchmarkItem>>>(StringComparer.Ordinal);
+
+        foreach (var (baseName, jobs) in grouped)
+        {
+            var jobLists = new Dictionary<string, IList<BenchmarkItem>>(StringComparer.Ordinal);
+
+            // Flatten for normalization
+            List<BenchmarkItem> allItems = [];
+            foreach (var (job, sorted) in jobs)
+            {
+                var items = sorted.Select((p) => p.Value).ToList();
+                jobLists[job] = items;
+                allItems.AddRange(items);
+            }
+
+            // Normalize time and memory units across all items for consistent axes
+            NormalizeUnits(allItems);
+
+            output[baseName] = jobLists;
+        }
+
+        return output;
+    }
+
+    /// <summary>
     /// Normalizes the units of the specified benchmarks to use the same unit.
     /// </summary>
     /// <param name="items">The items to normalize.</param>
@@ -138,7 +202,62 @@ public partial class Home
         }
 
         const double Factor = 1e-3;
-        const double Limit = 1_000;
+        const double Limit = 700;
+
+        var hasAllocations = items.Any((p) => p.Result.BytesAllocated is not null);
+
+        // Normalize input allocations
+        foreach (var item in items)
+        {
+            // normalize to nanoseconds
+            item.Result.Value = item.Result.Unit switch
+            {
+                null or "ns" => item.Result.Value,
+                "µs" => item.Result.Value * 1e3,
+                "ms" => item.Result.Value * 1e6,
+                "s" => item.Result.Value * 1e9,
+                _ => throw new ArgumentOutOfRangeException(nameof(items), item.Result.Unit, "Unknown time unit."),
+            };
+
+            if (double.TryParse(item.Result.Range?[2..], NumberStyles.Float, CultureInfo.InvariantCulture, out var rangeDouble))
+            {
+                var prefix = item.Result.Range[0..2];
+                var updated = item.Result.Unit switch
+                {
+                    null or "ns" => rangeDouble,
+                    "µs" => rangeDouble * 1e3,
+                    "ms" => rangeDouble * 1e6,
+                    "s" => rangeDouble * 1e9,
+                    _ => throw new ArgumentOutOfRangeException(nameof(items), item.Result.Unit, "Unknown time unit."),
+                };
+
+                item.Result.Range = prefix + updated;
+            }
+
+            item.Result.Unit = "ns";
+
+            if (item.Result.BytesAllocated is not null)
+            {
+                // normalize to bytes
+                item.Result.BytesAllocated = item.Result.MemoryUnit switch
+                {
+                    // When it's bytes it's not listed.
+                    null or "B" => item.Result.BytesAllocated,
+                    "KB" => item.Result.BytesAllocated * 1e3,
+                    "MB" => item.Result.BytesAllocated * 1e6,
+                    "GB" => item.Result.BytesAllocated * 1e9,
+                    "TB" => item.Result.BytesAllocated * 1e12,
+                    _ => throw new ArgumentOutOfRangeException(nameof(items), item.Result.MemoryUnit, "Unknown memory unit."),
+                };
+            }
+
+            // I'm not sure how real this will be, but there was an edge case
+            // in the tests where 1 entry was missing allocations.
+            if (hasAllocations)
+            {
+                item.Result.MemoryUnit = "B";
+            }
+        }
 
         var minimumTime = items.Min((p) => p.Result.Value);
         string[] timeUnits = ["µs", "ms", "s"];
@@ -172,7 +291,7 @@ public partial class Home
 
         if (items.Where((p) => p is not null).Min((p) => p.Result!.BytesAllocated) is { } minimumBytes)
         {
-            string[] memoryUnits = ["KB", "MB"];
+            string[] memoryUnits = ["KB", "MB", "GB", "TB"];
 
             for (int i = 0; i < memoryUnits.Length; i++)
             {
@@ -252,6 +371,12 @@ public partial class Home
             await JS.InvokeVoidAsync("configureDeepLinks", []);
         }
     }
+
+    [GeneratedRegex(@"^(.*?)(\[(\d+)\])?$", RegexOptions.CultureInvariant)]
+    private static partial Regex SuffixRegex();
+
+    [GeneratedRegex(@"^(?<base>.*?)(?:\[(?<job>.*?)\])?$", RegexOptions.CultureInvariant)]
+    private static partial Regex JobRegex();
 
     private async Task RepositoryChangedAsync(ChangeEventArgs args)
     {

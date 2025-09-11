@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
+using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
 
 namespace MartinCostello.Benchmarks;
 
@@ -26,15 +27,18 @@ internal static class AppLauncher
 
         // See https://learn.microsoft.com/aspnet/core/fundamentals/servers/kestrel/endpoints#configure-endpoints
         int port = GetFreePort();
-        var serverAddress = FormattableString.Invariant($"https://localhost:{port}");
+        var bindingAddress = FormattableString.Invariant($"https://localhost:{port}");
+        var browseAddress = bindingAddress; // + "?env=Test";
 
-        var startInfo = new ProcessStartInfo("dotnet", ["run", "--configuration", configuration, "--", "--urls", serverAddress])
+        var startInfo = new ProcessStartInfo("dotnet", ["run", "--configuration", configuration, "--", "--environment", "Test", "--urls", bindingAddress])
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
             WorkingDirectory = path,
         };
+
+        startInfo.AddEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Test");
 
         var completionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var tokenSource = new CancellationTokenSource(timeout);
@@ -49,7 +53,7 @@ internal static class AppLauncher
 
         completionSource.Task.Wait();
 
-        return (server!, serverAddress);
+        return (server!, browseAddress);
     }
 
     private static int GetFreePort()

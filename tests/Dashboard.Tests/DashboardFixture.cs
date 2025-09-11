@@ -22,7 +22,7 @@ public sealed class DashboardFixture : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private static string GetApplicationDirectory()
+    internal static string GetApplicationDirectory()
     {
         var solutionPath = typeof(DashboardFixture).Assembly
             .GetCustomAttributes<AssemblyMetadataAttribute>()
