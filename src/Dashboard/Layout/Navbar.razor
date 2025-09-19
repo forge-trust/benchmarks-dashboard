@@ -96,6 +96,18 @@
                     </li>
                 </ul>
             }
+
+            <ul class="nav navbar-nav">
+                <li>
+                    <button class="btn btn-link navbar-btn nav-link"
+                            id="toggle-theme"
+                            title="Toggle theme"
+                            type="button"
+                            @onclick="ToggleThemeAsync">
+                        <Icon Name="@(Icons.Moon)" />
+                    </button>
+                </li>
+            </ul>
         </div>
     </div>
 </nav>

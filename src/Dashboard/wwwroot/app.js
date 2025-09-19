@@ -1,5 +1,12 @@
 'use strict';
 
+window.toggleTheme = () => {
+  const theme = localStorage.getItem('theme') === 'dark' ? 'light' : 'dark';
+  window._setBenchmarkTheme(theme);
+  // Allow CSS to apply then refresh charts
+  setTimeout(() => window.refreshChartThemes(), 50);
+};
+
 window.scrollToActiveChart = () => {
   if (window.location.hash) {
     const focus = window.location.hash.substring(1);
@@ -98,6 +105,28 @@ window.configureDataDownload = (json, fileName) => {
   }
 };
 
+function getThemeStyles() {
+  const root = document.documentElement;
+  const styles = getComputedStyle(root);
+  const theme = root.getAttribute('data-bs-theme');
+  const fontColor = styles.getPropertyValue('--bs-body-color')?.trim() || (theme === 'dark' ? '#f8f9fa' : '#212529');
+  const hoverColor = styles.getPropertyValue('--plot-hover-color')?.trim() || (theme === 'dark' ? '#fff' : '#000');
+  const hoverBg = styles.getPropertyValue('--plot-hover-background-color')?.trim() || (theme === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)');
+  const bgTransparent = 'rgba(0,0,0,0)';
+  return { fontColor, hoverColor, hoverBg, bgTransparent };
+}
+
+function applyThemeToLayout(layout) {
+  const { fontColor, bgTransparent } = getThemeStyles();
+  layout.paper_bgcolor = bgTransparent;
+  layout.plot_bgcolor = bgTransparent;
+  layout.font.color = fontColor;
+  layout.xaxis.color = fontColor;
+  layout.yaxis.color = fontColor;
+  layout.title.font = (layout.title.font || {});
+  layout.title.font.color = fontColor;
+}
+
 window.renderChart = (chartId, configString) => {
   const config = JSON.parse(configString);
   const { dataset } = config;
@@ -151,6 +180,9 @@ window.renderChart = (chartId, configString) => {
     },
   };
 
+  // Apply theme-aware styling
+  applyThemeToLayout(layout);
+
   if (!isDesktop) {
     layout.margin = {
       l: 30,
@@ -188,11 +220,12 @@ window.renderChart = (chartId, configString) => {
       newline;
   });
 
+  const { hoverColor } = getThemeStyles();
   const hoverlabel = {
     align: 'left',
     bordercolor: 'black',
     font: {
-      color: getComputedStyle(document.documentElement).getPropertyValue('--plot-hover-color'),
+      color: hoverColor,
       family: getComputedStyle(document.documentElement).getPropertyValue('--bs-font-sans-serif'),
     }
   };
@@ -287,6 +320,9 @@ window.renderChart = (chartId, configString) => {
         text: memoryUnit,
       },
     };
+
+    // Theme color for secondary axis
+    layout.yaxis2.color = layout.font.color;
 
     const allZero = dataset.every((p) => p.result.bytesAllocated === 0);
     if (allZero) {
@@ -404,6 +440,9 @@ window.renderMultiChart = (chartId, configString) => {
     },
   };
 
+  // Apply theme-aware styling
+  applyThemeToLayout(layout);
+
   if (!isDesktop) {
     layout.margin = {
       l: 30,
@@ -453,6 +492,8 @@ window.renderMultiChart = (chartId, configString) => {
     }
   }
 
+  const { hoverColor } = getThemeStyles();
+
   for (let i = 0; i < jobs.length; i++) {
     const job = jobs[i];
     const items = dataset[job] || [];
@@ -466,7 +507,7 @@ window.renderMultiChart = (chartId, configString) => {
       align: 'left',
       bordercolor: 'black',
       font: {
-        color: getComputedStyle(document.documentElement).getPropertyValue('--plot-hover-color'),
+        color: hoverColor,
         family: getComputedStyle(document.documentElement).getPropertyValue('--bs-font-sans-serif'),
       }
     };
@@ -597,5 +638,29 @@ window.renderMultiChart = (chartId, configString) => {
       filename,
       format,
     });
+  });
+};
+
+// Refresh theme for existing charts
+window.refreshChartThemes = () => {
+  if (!('Plotly' in window)) {
+    return;
+  }
+
+  const { bgTransparent, fontColor } = getThemeStyles();
+  document.querySelectorAll('.js-plotly-plot').forEach((el) => {
+    try {
+      Plotly.relayout(el, {
+        'paper_bgcolor': bgTransparent,
+        'plot_bgcolor': bgTransparent,
+        'font.color': fontColor,
+        'xaxis.color': fontColor,
+        'yaxis.color': fontColor,
+        'yaxis2.color': fontColor,
+        'title.font.color': fontColor,
+      });
+    } catch (err) {
+      console.error('Failed to relayout chart for theme refresh:', err);
+    }
   });
 };
