@@ -658,6 +658,8 @@ window.refreshChartThemes = () => {
         'yaxis2.color': fontColor,
         'title.font.color': fontColor,
       });
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('Failed to relayout chart for theme refresh:', err);
+    }
   });
 };
