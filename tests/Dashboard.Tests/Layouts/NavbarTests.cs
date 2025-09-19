@@ -13,7 +13,6 @@ public class NavbarTests : DashboardTestContext
     {
         // Arrange
         await WithValidAccessToken();
-        JSInterop.SetupVoid("setThemeFromStorage", _ => true);
 
         // Act
         var actual = RenderComponent<Navbar>();
@@ -29,7 +28,6 @@ public class NavbarTests : DashboardTestContext
     {
         // Arrange
         UsingGitHubDotCom();
-        JSInterop.SetupVoid("setThemeFromStorage", _ => true);
 
         // Act
         var actual = RenderComponent<Navbar>();
