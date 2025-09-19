@@ -76,12 +76,17 @@
       top.location = self.location;
     }
   </script>
-  <link id="theme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/5.3.7/flatly/bootstrap.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link id="theme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/5.3.7/flatly/bootstrap.min.css" integrity="sha512-+QwQn6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <script type="text/javascript">
     (function () {
       const theme = localStorage.getItem('theme') || 'light';
+      const themeLink = document.getElementById('theme');
       if (theme === 'dark') {
-        document.getElementById('theme').href = 'https://cdnjs.cloudflare.com/ajax/libs/bootswatch/5.3.7/darkly/bootstrap.min.css';
+        themeLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/bootswatch/5.3.7/darkly/bootstrap.min.css';
+        themeLink.setAttribute('integrity', 'sha512-2QwQn6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw==');
+      } else {
+        themeLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/bootswatch/5.3.7/flatly/bootstrap.min.css';
+        themeLink.setAttribute('integrity', 'sha512-+QwQn6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw==');
       }
       document.documentElement.setAttribute('data-bs-theme', theme);
     })();
