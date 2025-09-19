@@ -3,7 +3,8 @@
 window.toggleTheme = () => {
   const theme = localStorage.getItem('theme') === 'dark' ? 'light' : 'dark';
   window._setBenchmarkTheme(theme);
-  window.refreshChartThemes();
+  // Allow CSS to apply then refresh charts
+  setTimeout(() => window.refreshChartThemes(), 50);
 };
 
 window.scrollToActiveChart = () => {
@@ -104,6 +105,28 @@ window.configureDataDownload = (json, fileName) => {
   }
 };
 
+function getThemeStyles() {
+  const root = document.documentElement;
+  const styles = getComputedStyle(root);
+  const theme = root.getAttribute('data-bs-theme');
+  const fontColor = styles.getPropertyValue('--bs-body-color')?.trim() || (theme === 'dark' ? '#f8f9fa' : '#212529');
+  const hoverColor = styles.getPropertyValue('--plot-hover-color')?.trim() || (theme === 'dark' ? '#fff' : '#000');
+  const hoverBg = styles.getPropertyValue('--plot-hover-background-color')?.trim() || (theme === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)');
+  const bgTransparent = 'rgba(0,0,0,0)';
+  return { fontColor, hoverColor, hoverBg, bgTransparent };
+}
+
+function applyThemeToLayout(layout) {
+  const { fontColor, bgTransparent } = getThemeStyles();
+  layout.paper_bgcolor = bgTransparent;
+  layout.plot_bgcolor = bgTransparent;
+  layout.font.color = fontColor;
+  layout.xaxis.color = fontColor;
+  layout.yaxis.color = fontColor;
+  layout.title.font = (layout.title.font || {});
+  layout.title.font.color = fontColor;
+}
+
 window.renderChart = (chartId, configString) => {
   const config = JSON.parse(configString);
   const { dataset } = config;
@@ -158,18 +181,7 @@ window.renderChart = (chartId, configString) => {
   };
 
   // Apply theme-aware styling
-  {
-    const root = document.documentElement;
-    const styles = getComputedStyle(root);
-    const fontColor = styles.getPropertyValue('--bs-body-color')?.trim() || (root.getAttribute('data-bs-theme') === 'dark' ? '#f8f9fa' : '#212529');
-    layout.paper_bgcolor = 'rgba(0,0,0,0)';
-    layout.plot_bgcolor = 'rgba(0,0,0,0)';
-    layout.font.color = fontColor;
-    layout.xaxis.color = fontColor;
-    layout.yaxis.color = fontColor;
-    layout.title.font = (layout.title.font || {});
-    layout.title.font.color = fontColor;
-  }
+  applyThemeToLayout(layout);
 
   if (!isDesktop) {
     layout.margin = {
@@ -208,11 +220,12 @@ window.renderChart = (chartId, configString) => {
       newline;
   });
 
+  const { hoverColor } = getThemeStyles();
   const hoverlabel = {
     align: 'left',
     bordercolor: 'black',
     font: {
-      color: getComputedStyle(document.documentElement).getPropertyValue('--plot-hover-color'),
+      color: hoverColor,
       family: getComputedStyle(document.documentElement).getPropertyValue('--bs-font-sans-serif'),
     }
   };
@@ -428,18 +441,7 @@ window.renderMultiChart = (chartId, configString) => {
   };
 
   // Apply theme-aware styling
-  {
-    const root = document.documentElement;
-    const styles = getComputedStyle(root);
-    const fontColor = styles.getPropertyValue('--bs-body-color')?.trim() || (root.getAttribute('data-bs-theme') === 'dark' ? '#f8f9fa' : '#212529');
-    layout.paper_bgcolor = 'rgba(0,0,0,0)';
-    layout.plot_bgcolor = 'rgba(0,0,0,0)';
-    layout.font.color = fontColor;
-    layout.xaxis.color = fontColor;
-    layout.yaxis.color = fontColor;
-    layout.title.font = (layout.title.font || {});
-    layout.title.font.color = fontColor;
-  }
+  applyThemeToLayout(layout);
 
   if (!isDesktop) {
     layout.margin = {
@@ -490,6 +492,8 @@ window.renderMultiChart = (chartId, configString) => {
     }
   }
 
+  const { hoverColor } = getThemeStyles();
+
   for (let i = 0; i < jobs.length; i++) {
     const job = jobs[i];
     const items = dataset[job] || [];
@@ -503,7 +507,7 @@ window.renderMultiChart = (chartId, configString) => {
       align: 'left',
       bordercolor: 'black',
       font: {
-        color: getComputedStyle(document.documentElement).getPropertyValue('--plot-hover-color'),
+        color: hoverColor,
         family: getComputedStyle(document.documentElement).getPropertyValue('--bs-font-sans-serif'),
       }
     };
@@ -520,7 +524,6 @@ window.renderMultiChart = (chartId, configString) => {
 
     let yValues;
     let textValues;
-
     if (isTime) {
       yValues = items.map((p) => p.result.value);
       textValues = items.map((item) => {
@@ -642,10 +645,8 @@ window.refreshChartThemes = () => {
   if (!('Plotly' in window)) {
     return;
   }
-  const root = document.documentElement;
-  const styles = getComputedStyle(root);
-  const fontColor = styles.getPropertyValue('--bs-body-color')?.trim() || (root.getAttribute('data-bs-theme') === 'dark' ? '#f8f9fa' : '#212529');
-  const bgTransparent = 'rgba(0,0,0,0)';
+
+  const { bgTransparent, fontColor } = getThemeStyles();
   document.querySelectorAll('.js-plotly-plot').forEach((el) => {
     try {
       Plotly.relayout(el, {
@@ -659,12 +660,4 @@ window.refreshChartThemes = () => {
       });
     } catch { /* ignore */ }
   });
-};
-
-// Patch setTheme to also refresh existing charts after theme change
-const originalSetTheme = window.setTheme;
-window.setTheme = (theme) => {
-  originalSetTheme(theme);
-  // Allow CSS to apply then refresh charts
-  setTimeout(() => window.refreshChartThemes(), 50);
 };
