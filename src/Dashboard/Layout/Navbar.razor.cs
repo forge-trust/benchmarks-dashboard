@@ -48,15 +48,6 @@ public sealed partial class Navbar : IAsyncDisposable
         GitHubService.OnUserChanged += OnUserChanged;
     }
 
-    /// <inheritdoc/>
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await JS.InvokeVoidAsync("setThemeFromStorage");
-        }
-    }
-
     private void OnUserChanged(object? sender, GitHubUserChangedEventArgs args)
         => StateHasChanged();
 
