@@ -524,6 +524,7 @@ window.renderMultiChart = (chartId, configString) => {
 
     let yValues;
     let textValues;
+
     if (isTime) {
       yValues = items.map((p) => p.result.value);
       textValues = items.map((item) => {
