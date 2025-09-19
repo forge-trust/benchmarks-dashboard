@@ -11,13 +11,16 @@
 
 :root {
   --copyright: '© Martin Costello 2024';
-  --plot-hover-color: white;
-  --plot-hover-background-color: rgba(0, 0, 0, 0.8);
+}
+
+:root[data-bs-theme='light'] {
+  --plot-hover-color: black;
+  --plot-hover-background-color: rgba(255, 255, 255, 0.8);
 }
 
 :root[data-bs-theme='dark'] {
-  --plot-hover-color: black;
-  --plot-hover-background-color: rgba(255, 255, 255, 0.8);
+  --plot-hover-color: white;
+  --plot-hover-background-color: rgba(0, 0, 0, 0.8);
 }
 
 body {
@@ -71,6 +74,10 @@ img.user-profile {
 .hovertext > path {
   fill: var(--plot-hover-background-color) !important;
   stroke: var(--plot-hover-background-color) !important;
+}
+
+.hovertext text {
+  fill: var(--plot-hover-color) !important;
 }
 
 .no-resize {

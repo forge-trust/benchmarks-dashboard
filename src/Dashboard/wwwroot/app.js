@@ -3,6 +3,7 @@
 window.toggleTheme = () => {
   const theme = localStorage.getItem('theme') === 'dark' ? 'light' : 'dark';
   window._setBenchmarkTheme(theme);
+  window.refreshChartThemes();
 };
 
 window.scrollToActiveChart = () => {
