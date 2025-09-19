@@ -1,4 +1,3 @@
-
 'use strict';
 
 const themeUrls = {
@@ -182,6 +181,20 @@ window.renderChart = (chartId, configString) => {
     },
   };
 
+  // Apply theme-aware styling
+  {
+    const root = document.documentElement;
+    const styles = getComputedStyle(root);
+    const fontColor = styles.getPropertyValue('--bs-body-color')?.trim() || (root.getAttribute('data-bs-theme') === 'dark' ? '#f8f9fa' : '#212529');
+    layout.paper_bgcolor = 'rgba(0,0,0,0)';
+    layout.plot_bgcolor = 'rgba(0,0,0,0)';
+    layout.font.color = fontColor;
+    layout.xaxis.color = fontColor;
+    layout.yaxis.color = fontColor;
+    layout.title.font = (layout.title.font || {});
+    layout.title.font.color = fontColor;
+  }
+
   if (!isDesktop) {
     layout.margin = {
       l: 30,
@@ -319,6 +332,9 @@ window.renderChart = (chartId, configString) => {
       },
     };
 
+    // Theme color for secondary axis
+    layout.yaxis2.color = layout.font.color;
+
     const allZero = dataset.every((p) => p.result.bytesAllocated === 0);
     if (allZero) {
       layout.yaxis2.maxallowed = 1;
@@ -434,6 +450,20 @@ window.renderMultiChart = (chartId, configString) => {
       },
     },
   };
+
+  // Apply theme-aware styling
+  {
+    const root = document.documentElement;
+    const styles = getComputedStyle(root);
+    const fontColor = styles.getPropertyValue('--bs-body-color')?.trim() || (root.getAttribute('data-bs-theme') === 'dark' ? '#f8f9fa' : '#212529');
+    layout.paper_bgcolor = 'rgba(0,0,0,0)';
+    layout.plot_bgcolor = 'rgba(0,0,0,0)';
+    layout.font.color = fontColor;
+    layout.xaxis.color = fontColor;
+    layout.yaxis.color = fontColor;
+    layout.title.font = (layout.title.font || {});
+    layout.title.font.color = fontColor;
+  }
 
   if (!isDesktop) {
     layout.margin = {
@@ -629,4 +659,36 @@ window.renderMultiChart = (chartId, configString) => {
       format,
     });
   });
+};
+
+// Refresh theme for existing charts
+window.refreshChartThemes = () => {
+  if (!('Plotly' in window)) {
+    return;
+  }
+  const root = document.documentElement;
+  const styles = getComputedStyle(root);
+  const fontColor = styles.getPropertyValue('--bs-body-color')?.trim() || (root.getAttribute('data-bs-theme') === 'dark' ? '#f8f9fa' : '#212529');
+  const bgTransparent = 'rgba(0,0,0,0)';
+  document.querySelectorAll('.js-plotly-plot').forEach((el) => {
+    try {
+      Plotly.relayout(el, {
+        'paper_bgcolor': bgTransparent,
+        'plot_bgcolor': bgTransparent,
+        'font.color': fontColor,
+        'xaxis.color': fontColor,
+        'yaxis.color': fontColor,
+        'yaxis2.color': fontColor,
+        'title.font.color': fontColor,
+      });
+    } catch { /* ignore */ }
+  });
+};
+
+// Patch setTheme to also refresh existing charts after theme change
+const originalSetTheme = window.setTheme;
+window.setTheme = (theme) => {
+  originalSetTheme(theme);
+  // Allow CSS to apply then refresh charts
+  setTimeout(() => window.refreshChartThemes(), 50);
 };

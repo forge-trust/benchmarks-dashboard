@@ -77,6 +77,12 @@ img.user-profile {
   resize: none;
 }
 
+/* Ensure dropdowns use theme colors */
+.form-select {
+  background-color: var(--bs-secondary-bg);
+  color: var(--bs-secondary-color);
+}
+
 .benchmark-set {
   margin: 0.5em 0;
   width: 100%;
@@ -191,4 +197,21 @@ text.gtitle > a {
   background-color: color-mix(in srgb, black 80%, transparent);
   border-color: color-mix(in srgb, black, transparent);
   color: white;
+}
+
+:root[data-bs-theme='dark'] .form-select {
+  background-color: var(--bs-secondary-bg) !important;
+  color: var(--bs-secondary-color) !important;
+  border-color: var(--bs-border-color) !important;
+}
+
+:root[data-bs-theme='dark'] .form-select:focus {
+  background-color: var(--bs-body-bg) !important;
+  color: var(--bs-body-color) !important;
+}
+
+:root[data-bs-theme='dark'] .form-select option,
+:root[data-bs-theme='dark'] select.form-select option {
+  background-color: var(--bs-secondary-bg);
+  color: var(--bs-secondary-color);
 }

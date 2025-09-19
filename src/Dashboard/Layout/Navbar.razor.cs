@@ -11,15 +11,15 @@ public sealed partial class Navbar : IAsyncDisposable
     private string? _dataRepoUrl;
 
     /// <summary>
-    /// Gets the dashboard options.
-    /// </summary>
-    private DashboardOptions Dashboard => Options.Value;
-
-    /// <summary>
     /// Gets the <see cref="IJSRuntime"/> to use.
     /// </summary>
     [Inject]
     public required IJSRuntime JS { get; init; }
+
+    /// <summary>
+    /// Gets the dashboard options.
+    /// </summary>
+    private DashboardOptions Dashboard => Options.Value;
 
     /// <inheritdoc/>
     public ValueTask DisposeAsync()
