@@ -69,21 +69,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <script type="text/javascript">
-    // Support overriding Blazor environment via query parameter, e.g. ?env=Test
-    (function() {
-      try {
-        var params = new URLSearchParams(window.location.search);
-        var env = params.get('env');
-        if (env) {
-          var meta = document.createElement('meta');
-          meta.setAttribute('name', 'blazor-environment');
-          meta.setAttribute('content', env);
-          document.head.appendChild(meta);
-        }
-      } catch (e) { /* no-op */ }
-    })();
-  </script>
-  <script type="text/javascript">
     if (self == top) {
       document.documentElement.className = document.documentElement.className.replace(/\bjs-flash\b/, '');
     }

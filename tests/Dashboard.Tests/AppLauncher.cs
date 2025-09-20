@@ -27,18 +27,15 @@ internal static class AppLauncher
 
         // See https://learn.microsoft.com/aspnet/core/fundamentals/servers/kestrel/endpoints#configure-endpoints
         int port = GetFreePort();
-        var bindingAddress = FormattableString.Invariant($"https://localhost:{port}");
-        var browseAddress = bindingAddress; // + "?env=Test";
+        var serverAddress = FormattableString.Invariant($"https://localhost:{port}");
 
-        var startInfo = new ProcessStartInfo("dotnet", ["run", "--configuration", configuration, "--", "--environment", "Test", "--urls", bindingAddress])
+        var startInfo = new ProcessStartInfo("dotnet", ["run", "--configuration", configuration, "--", "--urls", serverAddress])
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
             WorkingDirectory = path,
         };
-
-        startInfo.AddEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Test");
 
         var completionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var tokenSource = new CancellationTokenSource(timeout);
@@ -53,7 +50,7 @@ internal static class AppLauncher
 
         completionSource.Task.Wait();
 
-        return (server!, browseAddress);
+        return (server!, serverAddress);
     }
 
     private static int GetFreePort()

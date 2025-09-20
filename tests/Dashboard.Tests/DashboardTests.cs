@@ -2,7 +2,6 @@
 // Licensed under the Apache 2.0 license. See the LICENSE file in the project root for full license information.
 
 using System.Runtime.CompilerServices;
-using System.Text.Json;
 using MartinCostello.Benchmarks.PageModels;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Playwright;
@@ -43,7 +42,8 @@ public class DashboardTests(
     public async Task Can_View_Benchmarks(string browserType, string? browserChannel)
     {
         // Arrange
-        string[] expectedRepos = [
+        string[] expectedRepos =
+        [
             "benchmarks-demo",
             "adventofcode",
             "alexa-london-travel",
@@ -82,6 +82,7 @@ public class DashboardTests(
             await dashboard.Branch().ShouldBe("main");
 
             await dashboard.Repositories().ShouldBe(expectedRepos);
+            await dashboard.Branches().ShouldBe(["main", "dotnet-nightly", "dotnet-vnext"]);
 
             var benchmarks = await dashboard.Benchmarks();
 
@@ -159,7 +160,6 @@ public class DashboardTests(
             await dashboard.Branch().ShouldBe("main");
 
             await dashboard.Repositories().ShouldBe(expectedRepos);
-
             await dashboard.Branches().ShouldBe(["main", "dotnet-nightly", "dotnet-vnext"]);
 
             // Act

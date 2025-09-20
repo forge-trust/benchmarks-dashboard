@@ -107,7 +107,5 @@ ForEach ($project in $publishProjects) {
 
 if (-Not $SkipTests) {
     Write-Information "Testing solution..."
-    # set ASPNETCORE_ENVIRONMENT to 'Test' for the test run
-    $env:ASPNETCORE_ENVIRONMENT = "Test"
     DotNetTest
 }
