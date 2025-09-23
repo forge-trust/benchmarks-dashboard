@@ -3,8 +3,10 @@
 window.toggleTheme = () => {
   const theme = localStorage.getItem('theme') === 'dark' ? 'light' : 'dark';
   window._setBenchmarkTheme(theme);
-  // Allow CSS to apply then refresh charts
+  // Optimistically refresh immediately
   window.refreshChartThemes();
+  // Allow CSS to apply then refresh charts
+  setTimeout(() => window.refreshChartThemes(), 50);
 };
 
 window.scrollToActiveChart = () => {
