@@ -112,14 +112,15 @@ function getThemeStyles() {
   const fontColor = styles.getPropertyValue('--bs-body-color')?.trim() || (theme === 'dark' ? '#f8f9fa' : '#212529');
   const hoverColor = styles.getPropertyValue('--plot-hover-color')?.trim() || (theme === 'dark' ? '#fff' : '#000');
   const hoverBg = styles.getPropertyValue('--plot-hover-background-color')?.trim() || (theme === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)');
-  const bgTransparent = 'rgba(0,0,0,0)';
-  return { fontColor, hoverColor, hoverBg, bgTransparent };
+  const bgColor = styles.getPropertyValue('--bs-body-bg')?.trim() || (theme === 'dark' ? '#212529' : '#fff');
+
+  return { fontColor, bgColor, hoverColor, hoverBg };
 }
 
 function applyThemeToLayout(layout) {
-  const { fontColor, bgTransparent } = getThemeStyles();
-  layout.paper_bgcolor = bgTransparent;
-  layout.plot_bgcolor = bgTransparent;
+  const { fontColor, bgColor } = getThemeStyles();
+  layout.paper_bgcolor = bgColor;
+  layout.plot_bgcolor = bgColor;
   layout.font.color = fontColor;
   layout.xaxis.color = fontColor;
   layout.yaxis.color = fontColor;
@@ -647,12 +648,12 @@ window.refreshChartThemes = () => {
     return;
   }
 
-  const { bgTransparent, fontColor } = getThemeStyles();
+  const { fontColor, bgColor } = getThemeStyles();
   document.querySelectorAll('.js-plotly-plot').forEach((el) => {
     try {
       Plotly.relayout(el, {
-        'paper_bgcolor': bgTransparent,
-        'plot_bgcolor': bgTransparent,
+        'paper_bgcolor': bgColor,
+        'plot_bgcolor': bgColor,
         'font.color': fontColor,
         'xaxis.color': fontColor,
         'yaxis.color': fontColor,
