@@ -4,7 +4,7 @@ window.toggleTheme = () => {
   const theme = localStorage.getItem('theme') === 'dark' ? 'light' : 'dark';
   window._setBenchmarkTheme(theme);
   // Allow CSS to apply then refresh charts
-  setTimeout(() => window.refreshChartThemes(), 50);
+  window.refreshChartThemes();
 };
 
 window.scrollToActiveChart = () => {
