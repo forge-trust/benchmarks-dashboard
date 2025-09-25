@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
-using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
 
 namespace MartinCostello.Benchmarks;
 
